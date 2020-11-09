@@ -10,6 +10,77 @@ int* create_array(int length)
     return array;
 }
 
+// Найти элемент массива для разбиения
+int get_midle(int* array, int start, int end)
+{
+    int last = array[end];
+    int mid = start;
+    
+    for(int i = start; i < end; i++)
+    {
+        if(array[i] <= last)
+        {
+            swap(array[i], array[mid]);
+            mid++;
+        }
+    }
+    swap(array[end], array[mid]);
+    
+    return mid;
+}
+
+// Быстрая сортировка
+void quick_sort(int* array, int start, int end)
+{
+    if (start < end)
+    {
+        int mid = get_midle(array, start, end);
+        quick_sort(array, start, mid-1);
+        quick_sort(array, mid+1, end);
+    }
+}
+
+int* sorting(int* array, int length, int code)
+{
+    // Сортировка пузырьком
+    if (code == 1)
+    {
+        for (int i = 0; i < (length-1); i++)
+        {
+            for (int j = 0; j < (length-i-1); j++)
+            {
+                if (array[j] > array[j+1])
+                {
+                    swap(array[j], array[j+1]);
+                }
+            }
+        }
+    }
+    // Быстрая сортировка
+    else if (code == 2)
+    {
+        quick_sort(array, 0, length-1);
+    }
+    // Гномья сортировка
+    else if (code == 3)
+    {
+        int i = 0;
+        while (i < length)
+        {
+            if (i == 0)
+                i ++;
+            if (array[i] >= array[i-1])
+                i++;
+            else
+            {
+                swap(array[i], array[i-1]);
+                i--;
+            }
+        }
+    }
+    return array;
+}
+
 int* fillin_array(int* array, int length, int code)
 {
     if (code == 1)
@@ -39,11 +110,11 @@ void print_array(int* array, int length)
 {
     for (int i = 0; i < length; i++)
     {
-        cout << "x[" << i << "] = " << array[i] << endl;
+        cout << array[i] << endl;
     }
 }
 
-void menu()
+int* menu()
 {
     int choose;
     int* array = nullptr;
@@ -101,11 +172,17 @@ void menu()
                 break;
         }
     } while (choose != 0);
+    return array;
 }
 
 int main()
 {
-    cout << "Меню создания и управление массивом" << endl;
-    menu();
+    int* array = menu();
+    cout << "Не отсортированный массив" << endl;
+    print_array(array, 10);
+    cout << "Отсортированный массив" << endl;
+    array = sorting(array, 10, 2);
+    print_array(array, 10);
+    
     return 0;
 }
