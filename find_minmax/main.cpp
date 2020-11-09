@@ -11,11 +11,11 @@ int* create_array(int length)
 }
 
 // Найти элемент массива для разбиения
-int get_midle(int* array, int start, int end)
+int get_midle(int* array, int start, int end, int threads)
 {
     int last = array[end];
     int mid = start;
-    
+#pragma omp parallel for
     for(int i = start; i < end; i++)
     {
         if(array[i] <= last)
@@ -25,56 +25,62 @@ int get_midle(int* array, int start, int end)
         }
     }
     swap(array[end], array[mid]);
-    
     return mid;
 }
 
 // Быстрая сортировка
-void quick_sort(int* array, int start, int end)
+void quick_sort(int* array, int start, int end, int threads)
 {
     if (start < end)
     {
-        int mid = get_midle(array, start, end);
-        quick_sort(array, start, mid-1);
-        quick_sort(array, mid+1, end);
+        int mid = get_midle(array, start, end, threads);
+        quick_sort(array, start, mid-1, threads);
+        quick_sort(array, mid+1, end, threads);
     }
 }
 
-int* sorting(int* array, int length, int code)
+int* sorting(int* array, int length, int code, int threads = 1)
 {
-    // Сортировка пузырьком
-    if (code == 1)
+    omp_set_num_threads(threads);
+#pragma omp parallel
     {
-        for (int i = 0; i < (length-1); i++)
+        // Сортировка пузырьком
+        if (code == 1)
         {
-            for (int j = 0; j < (length-i-1); j++)
+        #pragma omp parallel for
+            for (int i = 0; i < (length-1); i++)
             {
-                if (array[j] > array[j+1])
+            #pragma omp parallel for
+                for (int j = 0; j < (length-i-1); j++)
                 {
-                    swap(array[j], array[j+1]);
+                    if (array[j] > array[j+1])
+                    {
+                        swap(array[j], array[j+1]);
+                    }
                 }
             }
         }
-    }
-    // Быстрая сортировка
-    else if (code == 2)
-    {
-        quick_sort(array, 0, length-1);
-    }
-    // Гномья сортировка
-    else if (code == 3)
-    {
-        int i = 0;
-        while (i < length)
+        // Быстрая сортировка
+        else if (code == 2)
         {
-            if (i == 0)
-                i ++;
-            if (array[i] >= array[i-1])
-                i++;
-            else
+            quick_sort(array, 0, length-1, threads);
+        }
+        // Гномья сортировка
+        else if (code == 3)
+        {
+        #pragma omp parallel for
+            for (int i = 0; i < length; i++)
             {
-                swap(array[i], array[i-1]);
-                i--;
+                i-=1;
+                if (i == 0)
+                    i ++;
+                if (array[i] >= array[i-1])
+                    i++;
+                else
+                {
+                    swap(array[i], array[i-1]);
+                    i--;
+                }
             }
         }
     }
@@ -83,25 +89,27 @@ int* sorting(int* array, int length, int code)
 
 int* fillin_array(int* array, int length, int code)
 {
-    if (code == 1)
     {
-        cout << "Начинается ввод массива" << endl;
-        for (int i = 0; i < length; i++)
+        if (code == 1)
         {
-            int n;
-            cout << "Введите x" << i+1 << "\n> ";
-            cin >> n;
-            array[i] = n;
-        }
-    } else if (code == 2)
-    {
-        cout << "Заполнение массива рандомными элементами" << endl;
-        srand((unsigned)time(0));
-        for (int i = 0; i < length; i++)
+            cout << "Начинается ввод массива" << endl;
+            for (int i = 0; i < length; i++)
+            {
+                int n;
+                cout << "Введите x" << i+1 << "\n> ";
+                cin >> n;
+                array[i] = n;
+            }
+        } else if (code == 2)
         {
-            array[i] = 0 + rand() % 20;
+            cout << "Заполнение массива рандомными элементами" << endl;
+            srand((unsigned)time(0));
+            for (int i = 0; i < length; i++)
+            {
+                array[i] = 0 + rand() % 20;
+            }
+            
         }
-        
     }
     return array;
 }
@@ -113,6 +121,8 @@ void print_array(int* array, int length)
         cout << array[i] << endl;
     }
 }
+
+
 
 int* menu()
 {
@@ -178,11 +188,11 @@ int* menu()
 int main()
 {
     int* array = menu();
-    cout << "Не отсортированный массив" << endl;
-    print_array(array, 10);
-    cout << "Отсортированный массив" << endl;
-    array = sorting(array, 10, 2);
-    print_array(array, 10);
+        cout << "Не отсортированный массив" << endl;
+        print_array(array, 10);
+        cout << "Отсортированный массив" << endl;
+        array = sorting(array, 10, 2, 4);
+        print_array(array, 10);
     
     return 0;
 }
