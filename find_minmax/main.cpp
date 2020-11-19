@@ -16,9 +16,9 @@ int get_midle(int* array, int start, int end)
     int last = array[end];
     int mid = start;
 #pragma omp parallel for
-    for(int i = start; i < end; i++)
+    for (int i = start; i < end; i++)
     {
-        if(array[i] <= last)
+        if (array[i] <= last)
         {
             swap(array[i], array[mid]);
             mid++;
@@ -34,28 +34,29 @@ void quick_sort(int* array, int start, int end)
     if (start < end)
     {
         int mid = get_midle(array, start, end);
-        quick_sort(array, start, mid-1);
-        quick_sort(array, mid+1, end);
+        quick_sort(array, start, mid - 1);
+        quick_sort(array, mid + 1, end);
     }
 }
 
 int* sorting(int* array, int length, int code, int threads)
 {
+    int tmp = 0;
     omp_set_num_threads(threads);
 #pragma omp parallel
     {
         // Сортировка пузырьком
         if (code == 1)
         {
-        #pragma omp parallel for
-            for (int i = 0; i < (length-1); i++)
+    #pragma omp parallel for
+            for (int i = 0; i < (length - 1); i++)
             {
-            #pragma omp parallel for
-                for (int j = 0; j < (length-i-1); j++)
+        #pragma omp parallel for
+                for (int j = 0; j < (length - i - 1); j++)
                 {
-                    if (array[j] > array[j+1])
+                    if (array[j] > array[j + 1])
                     {
-                        swap(array[j], array[j+1]);
+                        swap(array[j], array[j + 1]);
                     }
                 }
             }
@@ -63,23 +64,25 @@ int* sorting(int* array, int length, int code, int threads)
         // Быстрая сортировка
         else if (code == 2)
         {
-            quick_sort(array, 0, length-1);
+            quick_sort(array, 0, length - 1);
         }
         // Гномья сортировка
         else if (code == 3)
         {
-        #pragma omp parallel for
-            for (int i = 0; i < length; i++)
+    #pragma omp parallel for shared(tmp)
+            for (int i = 0; i < INT_MAX; i++)
             {
-                i-=1;
-                if (i == 0)
-                    i ++;
-                if (array[i] >= array[i-1])
-                    i++;
+                if (tmp < length)
+                    break;
+                tmp -= 1;
+                if (tmp == 0)
+                    tmp++;
+                if (array[tmp] >= array[tmp - 1])
+                    tmp++;
                 else
                 {
-                    swap(array[i], array[i-1]);
-                    i--;
+                    swap(array[tmp], array[tmp - 1]);
+                    tmp--;
                 }
             }
         }
@@ -96,11 +99,12 @@ int* fillin_array(int* array, int length, int code)
             for (int i = 0; i < length; i++)
             {
                 int n;
-                cout << "Введите x" << i+1 << "\n> ";
+                cout << "Введите x" << i + 1 << "\n> ";
                 cin >> n;
                 array[i] = n;
             }
-        } else if (code == 2)
+        }
+        else if (code == 2)
         {
             cout << "Заполнение массива рандомными элементами" << endl;
             srand((unsigned)time(0));
@@ -108,7 +112,7 @@ int* fillin_array(int* array, int length, int code)
             {
                 array[i] = 0 + rand() % 20;
             }
-            
+
         }
     }
     return array;
@@ -117,11 +121,11 @@ int* fillin_array(int* array, int length, int code)
 void print_array(int* array, int length)
 {
     cout << "[";
-    for (int i = 0; i < length-1; i++)
+    for (int i = 0; i < length - 1; i++)
     {
         cout << array[i] << ", ";
     }
-    cout << array[length-1] << "]" << endl;
+    cout << array[length - 1] << "]" << endl;
 }
 
 void testing(int* array, int length, int threads)
@@ -131,28 +135,28 @@ void testing(int* array, int length, int threads)
     double sec = 0;
     // Соритровка пузырьком
     start = clock();
-    
+
     int* buble = sorting(array, length, 1, threads);
-    
+
     end = clock();
     sec = (double)(end - start) / CLOCKS_PER_SEC;
-    cout << "type: bubblesort; min = " << buble[0] << "; max = " << buble[length-1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
+    cout << "type: bubblesort; min = " << buble[0] << "; max = " << buble[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
     // Быстрая сортировка
     start = clock();
-        
+
     int* quick = sorting(array, length, 2, threads);
-    
+
     end = clock();
     sec = (double)(end - start) / CLOCKS_PER_SEC;
-    cout << "type: quicksort; min = " << quick[0] << "; max = " << quick[length-1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
-        
+    cout << "type: quicksort; min = " << quick[0] << "; max = " << quick[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
+
     start = clock();
     // Гомья сортировка
     int* gnome = sorting(array, length, 3, threads);
-        
+
     end = clock();
     sec = (double)(end - start) / CLOCKS_PER_SEC;
-    cout << "type: gnomesort; min = " << gnome[0] << "; max = " << gnome[length-1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
+    cout << "type: gnomesort; min = " << gnome[0] << "; max = " << gnome[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
     cout << endl;
 }
 
@@ -179,79 +183,80 @@ void menu()
         cout << "> ";
         cin >> choose;
         switch (choose) {
-            case 1:
-                cout << "Введите размер массива\n> ";
-                cin >> length;
-                array = create_array(length);
-                count += 1;
-                break;
-                
-            case 2:
-                if (count == 0)
-                    cout << "Вы пока не создали массив";
-                else
-                    array = fillin_array(array, length, 1);
-                break;
-                
-            case 3:
-                if (count == 0)
-                    cout << "Вы пока не создали массив";
-                else
-                    array = fillin_array(array, length, 2);
-                break;
-                
-            case 4:
-                if (count == 0)
-                    cout << "Вы пока не создали массив" << endl;
-                else
-                    print_array(array, length);
-                break;
-                
-            case 5:
-                if (count == 0)
-                    cout << "Вы пока не создали массив" << endl;
-                else
+        case 1:
+            cout << "Введите размер массива\n> ";
+            cin >> length;
+            array = create_array(length);
+            count += 1;
+            break;
+
+        case 2:
+            if (count == 0)
+                cout << "Вы пока не создали массив";
+            else
+                array = fillin_array(array, length, 1);
+            break;
+
+        case 3:
+            if (count == 0)
+                cout << "Вы пока не создали массив";
+            else
+                array = fillin_array(array, length, 2);
+            break;
+
+        case 4:
+            if (count == 0)
+                cout << "Вы пока не создали массив" << endl;
+            else
+                print_array(array, length);
+            break;
+
+        case 5:
+            if (count == 0)
+                cout << "Вы пока не создали массив" << endl;
+            else
+            {
+                if (length == 10)
                 {
-                    if (length == 10)
-                    {
-                        cout << "Исходный массив" << endl;
-                        print_array(array, length);
-                        cout << endl;
-                    }
-                    
-                    testing(array, length, 1);
-                    testing(array, length, 2);
-                    testing(array, length, 4);
-                    testing(array, length, 8);
-                    testing(array, length, 16);
-                    testing(array, length, 32);
-                    
-                    if (length == 10)
-                    {
-                        cout << "Итоговый массив" << endl;
-                        print_array(array, length);
-                        cout << endl;
-                    }
+                    cout << "Исходный массив" << endl;
+                    print_array(array, length);
+                    cout << endl;
                 }
-                break;
-                
-            case 6:
-                output();
-                
-            case 0:
-                cout << "Программа завершена" << endl;
-                break;
-                
-            default:
-                cout << "Неправильный ввод" << endl;
-                break;
+
+                testing(array, length, 1);
+                testing(array, length, 2);
+                testing(array, length, 4);
+                testing(array, length, 8);
+                testing(array, length, 16);
+                testing(array, length, 32);
+
+                if (length == 10)
+                {
+                    cout << "Итоговый массив" << endl;
+                    print_array(array, length);
+                    cout << endl;
+                }
+            }
+            break;
+
+        case 6:
+            output();
+
+        case 0:
+            cout << "Программа завершена" << endl;
+            break;
+
+        default:
+            cout << "Неправильный ввод" << endl;
+            break;
         }
     } while (choose != 0);
 }
 
 int main()
 {
+    setlocale(LC_ALL, "Russian");
     menu();
-    
+
     return 0;
 }
