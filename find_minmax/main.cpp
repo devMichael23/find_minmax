@@ -1,44 +1,18 @@
 #include <iostream>
 #include <omp.h>
+#include <algorithm>
 #include <time.h>
 
 using namespace std;
 
+// Создание массива
 int* create_array(int length)
 {
     int* array = new int[length];
     return array;
 }
 
-// Найти элемент массива для разбиения
-int get_midle(int* array, int start, int end)
-{
-    int last = array[end];
-    int mid = start;
-#pragma omp parallel for
-    for (int i = start; i < end; i++)
-    {
-        if (array[i] <= last)
-        {
-            swap(array[i], array[mid]);
-            mid++;
-        }
-    }
-    swap(array[end], array[mid]);
-    return mid;
-}
-
-// Быстрая сортировка
-void quick_sort(int* array, int start, int end)
-{
-    if (start < end)
-    {
-        int mid = get_midle(array, start, end);
-        quick_sort(array, start, mid - 1);
-        quick_sort(array, mid + 1, end);
-    }
-}
-
+// Сортировка разными способами
 int* sorting(int* array, int length, int code, int threads)
 {
     int tmp = 0;
@@ -64,32 +38,13 @@ int* sorting(int* array, int length, int code, int threads)
         // Быстрая сортировка
         else if (code == 2)
         {
-            quick_sort(array, 0, length - 1);
-        }
-        // Гномья сортировка
-        else if (code == 3)
-        {
-    #pragma omp parallel for shared(tmp)
-            for (int i = 0; i < INT_MAX; i++)
-            {
-                if (tmp < length)
-                    break;
-                tmp -= 1;
-                if (tmp == 0)
-                    tmp++;
-                if (array[tmp] >= array[tmp - 1])
-                    tmp++;
-                else
-                {
-                    swap(array[tmp], array[tmp - 1]);
-                    tmp--;
-                }
-            }
+            sort(array, array + length);
         }
     }
     return array;
 }
 
+// Заполнить массив в ручную или автоматически
 int* fillin_array(int* array, int length, int code)
 {
     {
@@ -110,7 +65,7 @@ int* fillin_array(int* array, int length, int code)
             srand((unsigned)time(0));
             for (int i = 0; i < length; i++)
             {
-                array[i] = 0 + rand() % 20;
+                array[i] = 0 + rand() % 100;
             }
 
         }
@@ -118,6 +73,7 @@ int* fillin_array(int* array, int length, int code)
     return array;
 }
 
+// Вывести массив
 void print_array(int* array, int length)
 {
     cout << "[";
@@ -128,10 +84,13 @@ void print_array(int* array, int length)
     cout << array[length - 1] << "]" << endl;
 }
 
+// Осуществить тестирование программы
 void testing(int* array, int length, int threads)
 {
+    int* tmp = array;
     clock_t start = clock();
     clock_t end = clock();
+    
     double sec = 0;
     // Соритровка пузырьком
     start = clock();
@@ -141,7 +100,9 @@ void testing(int* array, int length, int threads)
     end = clock();
     sec = (double)(end - start) / CLOCKS_PER_SEC;
     cout << "type: bubblesort; min = " << buble[0] << "; max = " << buble[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
+   
     // Быстрая сортировка
+    array = tmp;
     start = clock();
 
     int* quick = sorting(array, length, 2, threads);
@@ -149,17 +110,11 @@ void testing(int* array, int length, int threads)
     end = clock();
     sec = (double)(end - start) / CLOCKS_PER_SEC;
     cout << "type: quicksort; min = " << quick[0] << "; max = " << quick[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
-
-    start = clock();
-    // Гомья сортировка
-    int* gnome = sorting(array, length, 3, threads);
-
-    end = clock();
-    sec = (double)(end - start) / CLOCKS_PER_SEC;
-    cout << "type: gnomesort; min = " << gnome[0] << "; max = " << gnome[length - 1] << "; " << sec << " sec; threads = " << threads << "; n = " << length << endl;
     cout << endl;
 }
 
+
+// Вывод меню
 void output()
 {
     cout << "Выберите действие" << endl;
@@ -172,6 +127,7 @@ void output()
     cout << "0 - Выход" << endl;
 }
 
+// Реализация меню
 void menu()
 {
     int choose;
@@ -201,7 +157,9 @@ void menu()
             if (count == 0)
                 cout << "Вы пока не создали массив";
             else
+            {
                 array = fillin_array(array, length, 2);
+            }
             break;
 
         case 4:
@@ -222,7 +180,6 @@ void menu()
                     print_array(array, length);
                     cout << endl;
                 }
-
                 testing(array, length, 1);
                 testing(array, length, 2);
                 testing(array, length, 4);
@@ -256,6 +213,10 @@ void menu()
 int main()
 {
     setlocale(LC_ALL, "Russian");
+    cout << "Практическая работа №3" << endl;
+    cout << "Параллельное программирование с использованием технолгии OpenMP" << endl;
+    cout << "Бузыкин Игорь" << endl;
+    cout << endl;
     menu();
 
     return 0;
