@@ -79,31 +79,27 @@ int* find_minmax(int* array, int length)
     return result;
 }
 
-void mpi_find_minmax(int* array, int n, int size, int rank)
+void mpi_find_minmax(int n, int size, int rank)
 {
-    MPI_Bcast(array, n, MPI_INT, 0, MPI_COMM_WORLD);
-    int recieve[] = { 0 };
-    int arr[] = { 0 };
-    int count = n / size;
-    int start, stop;
+    int* array = NULL;
+    int step = n / size;
     int local_min;
     int local_max;
     int global_min = 0;
     int global_max = 0;
+
     double begin = MPI_Wtime();
 
     if (rank == 0)
     {
+        array = new int[n];
+        array = fillin_array(array, n, 2);
         for (int i = 1; i < size; i++)
-        {
-            arr[0] = i * count;
-            MPI_Send(arr, 1, MPI_INT, i, 1, MPI_COMM_WORLD);
-        }
+            MPI_Send(&array[i * step], step, MPI_INT, i, 0, MPI_COMM_WORLD);
+
         local_min = array[0];
         local_max = array[0];
-        //cout << "Первый процесс получил ";
-        //print_array(array, 10, 1, 0, count);
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < step; i++)
         {
             if (array[i] < local_min)
                 local_min = array[i];
@@ -111,17 +107,14 @@ void mpi_find_minmax(int* array, int n, int size, int rank)
                 local_max = array[i];
         }
     }
-    if (rank > 0 && rank != size - 1)
+    else
     {
-        MPI_Recv(recieve, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        start = recieve[0];
-        stop = start + count;
-        local_min = array[start];
-        local_max = array[start];
-        //cout << "Процесс " << rank << " получил ";
-        //print_array(array, 10, 1, start, stop);
-        // Включая start, не включая stop
-        for (int i = start; i < stop; i++)
+        array = new int[step];
+        MPI_Recv(array, step, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        local_min = array[0];
+        local_max = array[0];
+        for (int i = 0; i < step; i++)
         {
             if (array[i] < local_min)
                 local_min = array[i];
@@ -129,30 +122,14 @@ void mpi_find_minmax(int* array, int n, int size, int rank)
                 local_max = array[i];
         }
     }
-    if (rank == size - 1)
-    {
-        MPI_Recv(recieve, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        start = recieve[0];
-        stop = n;
-        local_min = array[start];
-        local_max = array[start];
-        //cout << "Последний процесс получил ";
-        //print_array(array, 10, 1, start, stop);
-        // Включая start, не включая stop
-        for (int i = start; i < stop; i++)
-        {
-            if (array[i] < local_min)
-                local_min = array[i];
-            if (array[i] > local_max)
-                local_max = array[i];
-        }
-    }
+
     MPI_Reduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(&local_max, &global_max, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
         double end = MPI_Wtime();
         double time = end - begin;
+        int count = 0;
         cout << endl;
         cout << "Распределенное находение элементов [min, max] = [" << global_min << ", " << global_max << "]" << endl;
         cout << "time = " << time << " sec" << "; n = " << n << endl;
@@ -161,6 +138,7 @@ void mpi_find_minmax(int* array, int n, int size, int rank)
 
 void tests(int* n, int code, int size = 0, int rank = 0)
 {
+
     if (code == 1)
     {
         int choose;
@@ -207,18 +185,9 @@ void tests(int* n, int code, int size = 0, int rank = 0)
     }
     else if (code == 0)
     {
-        if (rank == 0)
-        {
-            int choose;
-            cout << "1 - Заполнить массив в ручную.\n2 - Запустить алгоритм проверки\n--> ";
-            cin >> choose;
-        }
         for (int i = 0; i < 6; i++)
         {
-            int* array = create_array(n[i]);
-            array = fillin_array(array, n[i], 2);
-            mpi_find_minmax(array, n[i], size, rank);
-            delete[] array;
+            mpi_find_minmax(n[i], size, rank);
         }
     }
 }
